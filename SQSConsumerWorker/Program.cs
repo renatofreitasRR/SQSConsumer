@@ -3,8 +3,8 @@ using SQSConsumerWorker.Workers;
 var builder = Host.CreateApplicationBuilder(args);
 
 builder.Services.AdicionarDependencias();
-builder.Services.AddWorkerMovimentosEntrada();
-builder.Services.AddWorkerMovimentosRespostas();
+builder.Services.AddCommandConsumer();
+builder.Services.AddEventConsumer();
 
 var host = builder.Build();
 host.Run();

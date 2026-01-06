@@ -1,7 +1,8 @@
-﻿using SQSConsumerWorker.Domain;
+﻿using ComplexSQSConsumerWorker.Messages;
+using SQSConsumerWorker.Domain;
 using SQSConsumerWorker.Handlers;
 
-public class ChainMessageHandler<T> : IMessageHandler<T>
+public class ChainMessageHandler<T> : IMessageHandler<T> where T : Message 
 {
     private readonly IEnumerable<IMessageHandler<T>> _handlers;
 

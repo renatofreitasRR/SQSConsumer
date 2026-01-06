@@ -1,7 +1,8 @@
-﻿using SQSConsumerWorker.Handlers;
+﻿using ComplexSQSConsumerWorker.Messages;
+using SQSConsumerWorker.Handlers;
 using SQSConsumerWorker.Services;
 
-public class ConsumerBuilder<T>
+public class ConsumerBuilder<T> where T : Message
 {
     private string? _queueUrl;
     private readonly List<Type> _handlerTypes = new();

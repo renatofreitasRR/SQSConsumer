@@ -1,6 +1,8 @@
-﻿namespace SQSConsumerWorker.Handlers
+﻿using ComplexSQSConsumerWorker.Messages;
+
+namespace SQSConsumerWorker.Handlers
 {
-    public interface IMessageHandler<T>
+    public interface IMessageHandler<T> where T : Message
     {
         Task<bool> HandleAsync(T message, CancellationToken cancellationToken = default);
     }

@@ -1,10 +1,10 @@
 ﻿using Amazon.SQS;
-using Amazon.SQS.Model;
+using ComplexSQSConsumerWorker.Messages;
 using SQSConsumerWorker.Handlers;
 using SQSConsumerWorker.Services;
 using System.Text.Json;
 
-public class SqsQueueConsumer<T> : IQueueConsumer<T>, IConfigurableQueueConsumer
+public class SqsQueueConsumer<T> : IQueueConsumer<T>, IConfigurableQueueConsumer where T : Message
 {
     private readonly IAmazonSQS _sqsClient;
     private readonly IMessageHandler<T> _handler;
@@ -28,7 +28,7 @@ public class SqsQueueConsumer<T> : IQueueConsumer<T>, IConfigurableQueueConsumer
 
         while (!cancellationToken.IsCancellationRequested)
         {
-            var response = await _sqsClient.ReceiveMessageAsync(new ReceiveMessageRequest
+            var response = await _sqsClient.ReceiveMessageAsync(new Amazon.SQS.Model.ReceiveMessageRequest
             {
                 QueueUrl = _queueUrl,
                 MaxNumberOfMessages = 10,
@@ -41,11 +41,11 @@ public class SqsQueueConsumer<T> : IQueueConsumer<T>, IConfigurableQueueConsumer
                 {
                     var messageObj = JsonSerializer.Deserialize<T>(msg.Body);
 
-                    if (messageObj != null)
-                    {
-                        await _handler.HandleAsync(messageObj, cancellationToken);
-                        await _sqsClient.DeleteMessageAsync(_queueUrl, msg.ReceiptHandle, cancellationToken);
-                    }
+                    if (messageObj == null)
+                        continue;
+
+                    await _handler.HandleAsync(messageObj, cancellationToken);
+                    await _sqsClient.DeleteMessageAsync(_queueUrl, msg.ReceiptHandle, cancellationToken);
                 }
                 catch (Exception ex)
                 {

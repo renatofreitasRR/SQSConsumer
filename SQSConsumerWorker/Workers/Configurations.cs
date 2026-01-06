@@ -1,4 +1,5 @@
-﻿using SQSConsumerWorker.Domain;
+﻿using ComplexSQSConsumerWorker.Events;
+using SQSConsumerWorker.Domain;
 using SQSConsumerWorker.Handlers;
 using SQSConsumerWorker.UseCases;
 
@@ -8,29 +9,28 @@ namespace SQSConsumerWorker.Workers
     {
         public static void AdicionarDependencias(this IServiceCollection services)
         {
-            services.AddScoped<IMessageHandler<MovimentoLiquidacaoEntradaEvent>, MovimentoLiquidacaoEntradaHandler>();
-            services.AddScoped<IMessageHandler<MovimentoLiquidacaoRespostaEvent>, MovimentoLiquidacaoRespostasHandler>();
+            services.AddScoped<IMessageHandler<CreditValueCommand>, SendCreditHandler>();
+            services.AddScoped<IMessageHandler<CreditProcessedEvent>, ProcessCreditStatusHandler>();
         }
 
-        public static void AddWorkerMovimentosEntrada(this IServiceCollection services)
+        public static void AddCommandConsumer(this IServiceCollection services)
         {
             services.AddHostedService(provider =>
-            new ConsumerBuilder<MovimentoLiquidacaoEntradaEvent>()
-               .ConfigureQueue("https://sqs.us-east-1.amazonaws.com/123456789012/fila")
-               .AddHandler<MovimentoLiquidacaoEntradaHandler>()
-               .Build(provider)
+                new ConsumerBuilder<CreditValueCommand>()
+                   .ConfigureQueue("https://sqs.us-east-1.amazonaws.com/123456789012/fila")
+                   .AddHandler<SendCreditHandler>()
+                   .Build(provider)
             );
         }
 
-        public static IServiceCollection AddWorkerMovimentosRespostas(this IServiceCollection services)
+        public static IServiceCollection AddEventConsumer(this IServiceCollection services)
         {
             services.AddHostedService(provider =>
-             new ConsumerBuilder<MovimentoLiquidacaoRespostaEvent>()
-                .ConfigureQueue("https://sqs.us-east-1.amazonaws.com/123456789012/fila")
-                .AddHandler<MovimentoLiquidacaoRespostasHandler>()
-                .Build(provider)
+                new ConsumerBuilder<CreditProcessedEvent>()
+                    .ConfigureQueue("https://sqs.us-east-1.amazonaws.com/123456789012/fila")
+                    .AddHandler<ProcessCreditStatusHandler>()
+                    .Build(provider)
              );
-
 
             return services;
         }
