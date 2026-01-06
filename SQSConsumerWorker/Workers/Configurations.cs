@@ -10,7 +10,6 @@ namespace SQSConsumerWorker.Workers
         {
             services.AddScoped<IMessageHandler<MovimentoLiquidacaoEntradaEvent>, MovimentoLiquidacaoEntradaHandler>();
             services.AddScoped<IMessageHandler<MovimentoLiquidacaoRespostaEvent>, MovimentoLiquidacaoRespostasHandler>();
-
         }
 
         public static void AddWorkerMovimentosEntrada(this IServiceCollection services)

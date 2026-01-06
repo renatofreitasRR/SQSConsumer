@@ -1,6 +1,9 @@
 ﻿using Amazon.SQS;
+using Microsoft.EntityFrameworkCore;
+using SimpleSQSConsumer.Data;
 using SimpleSQSConsumer.Domain;
 using SimpleSQSConsumer.Handlers;
+using SimpleSQSConsumer.Repositories;
 using SimpleSQSConsumer.Services;
 
 namespace SimpleSQSConsumer.Configuration
@@ -16,11 +19,26 @@ namespace SimpleSQSConsumer.Configuration
 
             services.AddTransient<IQueueService, SQSQueueService>();
 
-            services.AddTransient<IHandler<MovimentosEntradaMessage>, MovimentosEntradaHandler>();
-            services.AddTransient<IHandler<MovimentosRespostaMessage>, MovimentosRespostaHandler>();
+            services.AddTransient<IHandler<QueueStartMessage>, ProcessStartEventsHandler>();
+            services.AddTransient<IHandler<QueueReturnMessage>, ProcessReturnEventsHandler>();
 
-            services.AddHostedService<WorkerEntrada>();
-            services.AddHostedService<WorkerResposta>();
+            services.AddTransient<IQueueReturnRepository, QueueReturnRepository>();
+
+            services.AddHostedService<WorkerStart>();
+            services.AddHostedService<WorkerReturn>();
+
+            return services;
+        }
+
+        public static IServiceCollection AddDataBaseConfiguration(this IServiceCollection services, IConfiguration configuration)
+        {
+            services.AddDbContext<ReadDataContext>(options =>
+                options.UseInMemoryDatabase(configuration.GetConnectionString("ReadDatabase"))
+            );
+
+            services.AddDbContext<WriteDataContext>(options =>
+                options.UseInMemoryDatabase(configuration.GetConnectionString("WriteDatabase"))
+            );
 
             return services;
         }

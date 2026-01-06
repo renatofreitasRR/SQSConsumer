@@ -4,16 +4,17 @@ using SimpleSQSConsumer.Services;
 
 namespace SimpleSQSConsumer
 {
-    public class WorkerEntrada : BackgroundService
+    public class WorkerReturn : BackgroundService
     {
         private readonly IQueueService _queueService;
-        private readonly IHandler<MovimentosEntradaMessage> _handler;
-        private readonly string _queueUrl = "";
+        private readonly IHandler<QueueReturnMessage> _handler;
+        private readonly string _queueUrl;
 
-        public WorkerEntrada(IQueueService queueService, IHandler<MovimentosEntradaMessage> handler)
+        public WorkerReturn(IQueueService queueService, IHandler<QueueReturnMessage> handler, IConfiguration configuration)
         {
             _queueService = queueService;
             _handler = handler;
+            _queueUrl = configuration["AWS:SQS:QueueReturnUrl"] ?? throw new InvalidOperationException("QueueReturnUrl não configurada no appsettings.json");   
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -21,7 +22,6 @@ namespace SimpleSQSConsumer
             try
             {
                 await _queueService.ConsumeQueueAsync(_queueUrl, _handler, stoppingToken);
-
             }
             catch (Exception ex)
             {

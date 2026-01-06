@@ -12,7 +12,7 @@ public class ConsumerBuilder<T>
         return this;
     }
 
-    public ConsumerBuilder<T> AddHandler<TH>() where TH : class, IMessageHandler<T>
+    public ConsumerBuilder<T> AddHandler<TH>() where TH : IMessageHandler<T>
     {
         _handlerTypes.Add(typeof(TH));
         return this;

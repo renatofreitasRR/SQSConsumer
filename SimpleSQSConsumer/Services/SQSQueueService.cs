@@ -28,29 +28,30 @@ namespace SimpleSQSConsumer.Services
                     WaitTimeSeconds = 20
                 }, cancellationToken);
 
-                if(response.Messages == null)
+                if (response.Messages == null)
                     continue;
 
-                if(response.Messages.Count == 0)
+                if (response.Messages.Count == 0)
                     continue;
 
-                foreach (var msg in response.Messages)
+                await Parallel.ForEachAsync(response.Messages, cancellationToken, async (msg, ct) =>
                 {
                     try
                     {
                         var messageObj = JsonSerializer.Deserialize<T>(msg.Body);
-
                         if (messageObj != null)
                         {
-                            await handler.HandleAsync(messageObj, cancellationToken);
-                            await _sqsClient.DeleteMessageAsync(queueUrl, msg.ReceiptHandle, cancellationToken);
+                            var processResult = await handler.HandleAsync(messageObj, ct);
+
+                            if (processResult)
+                                await _sqsClient.DeleteMessageAsync(queueUrl, msg.ReceiptHandle, ct);
                         }
                     }
                     catch (Exception ex)
                     {
                         Console.WriteLine($"Erro ao processar mensagem: {ex.Message}");
                     }
-                }
+                });
             }
         }
     }

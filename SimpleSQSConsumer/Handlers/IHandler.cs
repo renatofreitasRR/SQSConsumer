@@ -2,6 +2,6 @@
 {
     public interface IHandler<T>
     {
-        Task HandleAsync(T message, CancellationToken cancellationToken = default);
+        Task<bool> HandleAsync(T message, CancellationToken cancellationToken = default);
     }
 }
