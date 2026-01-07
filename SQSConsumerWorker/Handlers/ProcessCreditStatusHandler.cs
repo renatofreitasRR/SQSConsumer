@@ -1,13 +1,12 @@
 ﻿using ComplexSQSConsumerWorker.Events;
-using SQSConsumerWorker.Handlers;
 
-namespace SQSConsumerWorker.UseCases
+namespace SQSConsumerWorker.Handlers
 {
     public class ProcessCreditStatusHandler : IMessageHandler<CreditProcessedEvent>
     {
-        public Task<bool> HandleAsync(CreditProcessedEvent @event, CancellationToken cancellationToken = default)
+        public async Task<bool> HandleAsync(CreditProcessedEvent @event, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return true;
         }
     }
 }

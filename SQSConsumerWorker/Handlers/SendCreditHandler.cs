@@ -1,13 +1,12 @@
 ﻿using SQSConsumerWorker.Domain;
-using SQSConsumerWorker.Handlers;
 
-namespace SQSConsumerWorker.UseCases
+namespace SQSConsumerWorker.Handlers
 {
     public class SendCreditHandler : IMessageHandler<CreditValueCommand>
     {
-        public Task<bool> HandleAsync(CreditValueCommand message, CancellationToken cancellationToken = default)
+        public async Task<bool> HandleAsync(CreditValueCommand message, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return true;
         }
     }
 }

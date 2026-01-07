@@ -1,10 +1,8 @@
-using SQSConsumerWorker.Workers;
+using ComplexSQSConsumerWorker.Configuration;
 
 var builder = Host.CreateApplicationBuilder(args);
 
-builder.Services.AdicionarDependencias();
-builder.Services.AddCommandConsumer();
-builder.Services.AddEventConsumer();
+builder.Services.AddConsumerConfiguration(builder.Configuration);
 
 var host = builder.Build();
 host.Run();

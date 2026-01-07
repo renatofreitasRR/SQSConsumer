@@ -27,13 +27,6 @@ public class ConsumerBuilder<T> where T : Message
         if (!_handlerTypes.Any())
             throw new InvalidOperationException("Nenhum handler configurado");
 
-        // resolve handlers via DI
-        var handlers = _handlerTypes
-            .Select(ht => (IMessageHandler<T>)provider.GetRequiredService(ht))
-            .ToList();
-
-        var chainHandler = new ChainMessageHandler<T>(handlers);
-
         var queueConsumer = provider.GetRequiredService<IQueueConsumer<T>>();
 
         if (queueConsumer is IConfigurableQueueConsumer configurable)

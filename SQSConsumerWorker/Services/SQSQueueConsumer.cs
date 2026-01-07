@@ -32,14 +32,19 @@ public class SqsQueueConsumer<T> : IQueueConsumer<T>, IConfigurableQueueConsumer
             {
                 QueueUrl = _queueUrl,
                 MaxNumberOfMessages = 10,
-                WaitTimeSeconds = 20
+                WaitTimeSeconds = 20,
             }, cancellationToken);
+
+            if(response.Messages is null || response.Messages.Count == 0)
+                continue;
 
             foreach (var msg in response.Messages)
             {
                 try
                 {
-                    var messageObj = JsonSerializer.Deserialize<T>(msg.Body);
+                    var messageObj = JsonSerializer.Deserialize<T>(msg.Body, new JsonSerializerOptions {
+                        PropertyNameCaseInsensitive = true
+                    });
 
                     if (messageObj == null)
                         continue;
