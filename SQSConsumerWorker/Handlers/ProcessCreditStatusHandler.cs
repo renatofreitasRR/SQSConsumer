@@ -1,4 +1,5 @@
 ﻿using ComplexSQSConsumerWorker.Events;
+using ComplexSQSConsumerWorker.Handlers.Contract;
 
 namespace SQSConsumerWorker.Handlers
 {

@@ -1,4 +1,5 @@
-﻿using SQSConsumerWorker.Domain;
+﻿using ComplexSQSConsumerWorker.Handlers.Contract;
+using SQSConsumerWorker.Domain;
 
 namespace SQSConsumerWorker.Handlers
 {

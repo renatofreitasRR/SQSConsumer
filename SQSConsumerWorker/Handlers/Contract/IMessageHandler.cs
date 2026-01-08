@@ -1,6 +1,6 @@
 ﻿using ComplexSQSConsumerWorker.Messages;
 
-namespace SQSConsumerWorker.Handlers
+namespace ComplexSQSConsumerWorker.Handlers.Contract
 {
     public interface IMessageHandler<T> where T : Message
     {

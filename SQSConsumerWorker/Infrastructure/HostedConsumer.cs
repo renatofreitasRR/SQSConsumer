@@ -1,23 +1,29 @@
-﻿using ComplexSQSConsumerWorker.Messages;
+﻿using ComplexSQSConsumerWorker.Infrastructure.Contracts;
+using ComplexSQSConsumerWorker.Messages;
 
 namespace ComplexSQSConsumerWorker.Infrastructure
 {
-    public class HostedConsumer<T> : IHostedService where T : Message
+    public interface IHostedConsumer<TMessage> : IHostedService where TMessage : Message
     {
-        private readonly IHostedService _innerService;
-        public HostedConsumer(IServiceProvider serviceProvider, Func<IServiceProvider, IHostedService> factory)
+    }
+
+    public class HostedConsumer<TMessage> : IHostedConsumer<TMessage> where TMessage : Message
+    {
+        private readonly IQueueConsumer<TMessage> _queueConsumer;
+
+        public HostedConsumer(IQueueConsumer<TMessage> queueConsumer)
         {
-            _innerService = factory(serviceProvider);
+            _queueConsumer = queueConsumer;
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            await _innerService.StartAsync(cancellationToken);
+            await _queueConsumer.StartConsumingAsync(cancellationToken);
         }
 
         public async Task StopAsync(CancellationToken cancellationToken)
         {
-            await _innerService.StopAsync(cancellationToken);
+            await _queueConsumer.StopConsumingAsync(cancellationToken);
         }
     }
 }

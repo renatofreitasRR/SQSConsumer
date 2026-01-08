@@ -5,9 +5,9 @@ namespace ComplexSQSConsumerWorker.Extensions
 {
     public static class ConsumerRegistrationExtensions
     {
-        public static void AddConsumer<T>(this IServiceCollection services, Func<IServiceProvider, IHostedService> factory) where T : Message
+        public static void AddConsumer<TMessage>(this IServiceCollection services, Action<ConsumerBuilder<TMessage>> builder) where TMessage : Message
         {
-            services.AddHostedService(provider => new HostedConsumer<T>(provider, factory));
+            builder.Invoke(new ConsumerBuilder<TMessage>(services));
         }
     }
 }
