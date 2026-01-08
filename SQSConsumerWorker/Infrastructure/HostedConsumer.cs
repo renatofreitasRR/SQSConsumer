@@ -1,13 +1,12 @@
 ﻿using ComplexSQSConsumerWorker.Infrastructure.Contracts;
 using ComplexSQSConsumerWorker.Messages;
+using System.Threading;
 
 namespace ComplexSQSConsumerWorker.Infrastructure
 {
-    public interface IHostedConsumer<TMessage> : IHostedService where TMessage : Message
-    {
-    }
+   
 
-    public class HostedConsumer<TMessage> : IHostedConsumer<TMessage> where TMessage : Message
+    public class HostedConsumer<TMessage> : BackgroundService where TMessage : Message
     {
         private readonly IQueueConsumer<TMessage> _queueConsumer;
 
@@ -16,14 +15,11 @@ namespace ComplexSQSConsumerWorker.Infrastructure
             _queueConsumer = queueConsumer;
         }
 
-        public async Task StartAsync(CancellationToken cancellationToken)
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            await _queueConsumer.StartConsumingAsync(cancellationToken);
-        }
+            Console.WriteLine($"Iniciando StartAsync para {typeof(TMessage).Name}");
 
-        public async Task StopAsync(CancellationToken cancellationToken)
-        {
-            await _queueConsumer.StopConsumingAsync(cancellationToken);
+            await _queueConsumer.StartConsumingAsync(stoppingToken);
         }
     }
 }

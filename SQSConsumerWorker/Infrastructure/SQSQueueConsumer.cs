@@ -7,16 +7,16 @@ using System.Text.Json;
 namespace ComplexSQSConsumerWorker.Infrastructure
 {
 
-    public class SqsQueueConsumer<T> : IQueueConsumer<T>, IConfigurableQueueConsumer where T : Message
+    public class SqsQueueConsumer<TMessage> : IQueueConsumer<TMessage>, IConfigurableQueueConsumer where TMessage : Message
     {
         private readonly IAmazonSQS _sqsClient;
-        private readonly IMessageHandler<T> _handler;
+        private readonly IServiceScopeFactory _scopeFactory;
         private string? _queueUrl;
 
-        public SqsQueueConsumer(IAmazonSQS sqsClient, IMessageHandler<T> handler)
+        public SqsQueueConsumer(IAmazonSQS sqsClient, IServiceScopeFactory scopeFactory)
         {
             _sqsClient = sqsClient;
-            _handler = handler;
+            _scopeFactory = scopeFactory;
         }
 
         public void Configure(string queueUrl)
@@ -28,6 +28,12 @@ namespace ComplexSQSConsumerWorker.Infrastructure
         {
             if (string.IsNullOrEmpty(_queueUrl))
                 throw new InvalidOperationException("QueueUrl não configurada no consumer");
+
+            var scope = _scopeFactory.CreateScope();
+
+            var pipeline = scope.
+                ServiceProvider
+                .GetRequiredService<IMessageProcessorPipeline<TMessage>>();
 
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -45,7 +51,7 @@ namespace ComplexSQSConsumerWorker.Infrastructure
                 {
                     try
                     {
-                        var messageObj = JsonSerializer.Deserialize<T>(msg.Body, new JsonSerializerOptions
+                        var messageObj = JsonSerializer.Deserialize<TMessage>(msg.Body, new JsonSerializerOptions
                         {
                             PropertyNameCaseInsensitive = true
                         });
@@ -53,7 +59,7 @@ namespace ComplexSQSConsumerWorker.Infrastructure
                         if (messageObj == null)
                             continue;
 
-                        await _handler.HandleAsync(messageObj, cancellationToken);
+                        await pipeline.ExecutePipelineAsync(messageObj, cancellationToken);
                         await _sqsClient.DeleteMessageAsync(_queueUrl, msg.ReceiptHandle, cancellationToken);
                     }
                     catch (Exception ex)

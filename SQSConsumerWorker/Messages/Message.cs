@@ -2,6 +2,11 @@
 {
     public abstract class Message
     {
-        public Guid Id { get; set; }
+        protected Guid Id { get; set; }
+        protected string TraceId { get; set; }
+        protected string ContextId { get; set; }
+
+        public string GetContextId() => ContextId;
+        public string GetTraceId() => ContextId;
     }
 }

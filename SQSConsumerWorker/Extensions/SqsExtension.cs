@@ -1,22 +1,21 @@
 ﻿using Amazon.SQS;
+using ComplexSQSConsumerWorker.Configuration;
 using ComplexSQSConsumerWorker.Events;
-using ComplexSQSConsumerWorker.Extensions;
+using ComplexSQSConsumerWorker.Middlewares;
 using SQSConsumerWorker.Domain;
 using SQSConsumerWorker.Handlers;
 
-namespace ComplexSQSConsumerWorker.Configuration
+namespace ComplexSQSConsumerWorker.Extensions
 {
-    public static class Configurations
+    public static class SqsExtension
     {
-        public static void AddConsumerConfiguration(this IServiceCollection services, IConfiguration configuration)
+        public static void AddSqsConfig(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddDefaultAWSOptions(
                 configuration.GetAWSOptions()
             );
 
             services.AddAWSService<IAmazonSQS>();
-
-            services.AddConsumers(configuration);
         }
 
         public static void AddConsumers(this IServiceCollection services, IConfiguration configuration)
@@ -32,6 +31,7 @@ namespace ComplexSQSConsumerWorker.Configuration
                 config
                 .ConfigureQueue(queueSettings.EventQueueUrl)
                 .AddHandler<ProcessCreditStatusHandler>()
+                .AddMiddleware<TraceMiddleware<CreditProcessedEvent>>()
                 .Build()
             );
 

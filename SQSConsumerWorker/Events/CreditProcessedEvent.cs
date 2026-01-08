@@ -1,14 +1,8 @@
-﻿using ComplexSQSConsumerWorker.Messages;
+﻿using ComplexSQSConsumerWorker.Entities.Enums;
+using ComplexSQSConsumerWorker.Messages;
 
 namespace ComplexSQSConsumerWorker.Events
 {
-    public enum CreditStatus
-    {
-        Pending,
-        Completed,
-        Failed
-    }
-
     public class CreditProcessedEvent : Message
     {
         public Guid OperationId { get; set; }

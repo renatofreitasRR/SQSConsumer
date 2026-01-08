@@ -52,9 +52,7 @@ namespace ComplexSQSConsumerWorker.Infrastructure
 
         public IConsumerHandlerConfigured<TMessage> AddMiddleware<TMiddleware>() where TMiddleware : class, IMessageMiddleware<TMessage>
         {
-            //_serviceCollection.BuildServiceProvider()
-            //    .GetRequiredService<TMiddleware>()
-            //    .Use<TMiddleware>();
+            _serviceCollection.AddScoped<IMessageMiddleware<TMessage>, TMiddleware>();
 
             return this;
         }
@@ -74,7 +72,13 @@ namespace ComplexSQSConsumerWorker.Infrastructure
                 return consumer;
             });
 
-            _serviceCollection.AddHostedService<HostedConsumer<TMessage>>();
+            _serviceCollection.AddHostedService<HostedConsumer<TMessage>>(factory =>
+            {
+                Console.WriteLine($"Iniciando HostedService para {typeof(TMessage).Name}");
+
+                var consumer = factory.GetRequiredService<IQueueConsumer<TMessage>>();
+                return new HostedConsumer<TMessage>(consumer);
+            });
         }
        
     }
