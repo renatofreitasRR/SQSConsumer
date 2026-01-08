@@ -72,13 +72,7 @@ namespace ComplexSQSConsumerWorker.Infrastructure
                 return consumer;
             });
 
-            _serviceCollection.AddHostedService<HostedConsumer<TMessage>>(factory =>
-            {
-                Console.WriteLine($"Iniciando HostedService para {typeof(TMessage).Name}");
-
-                var consumer = factory.GetRequiredService<IQueueConsumer<TMessage>>();
-                return new HostedConsumer<TMessage>(consumer);
-            });
+            _serviceCollection.AddHostedService<HostedConsumer<TMessage>>();
         }
        
     }
