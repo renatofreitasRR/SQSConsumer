@@ -1,5 +1,4 @@
 ﻿using Amazon.SQS;
-using ComplexSQSConsumerWorker.Handlers.Contract;
 using ComplexSQSConsumerWorker.Infrastructure.Contracts;
 using ComplexSQSConsumerWorker.Messages;
 using System.Text.Json;
@@ -29,14 +28,14 @@ namespace ComplexSQSConsumerWorker.Infrastructure
             if (string.IsNullOrEmpty(_queueUrl))
                 throw new InvalidOperationException("QueueUrl não configurada no consumer");
 
-            var scope = _scopeFactory.CreateScope();
-
-            var pipeline = scope.
-                ServiceProvider
-                .GetRequiredService<IMessageProcessorPipeline<TMessage>>();
-
             while (!cancellationToken.IsCancellationRequested)
             {
+                var scope = _scopeFactory.CreateScope();
+
+                var pipeline = scope.
+                    ServiceProvider
+                    .GetRequiredService<IMessageProcessorPipeline<TMessage>>();
+
                 var response = await _sqsClient.ReceiveMessageAsync(new Amazon.SQS.Model.ReceiveMessageRequest
                 {
                     QueueUrl = _queueUrl,

@@ -1,6 +1,5 @@
 ﻿using ComplexSQSConsumerWorker.Messages;
 using ComplexSQSConsumerWorker.Middlewares.Contracts;
-using Microsoft.AspNetCore.Http;
 
 namespace ComplexSQSConsumerWorker.Middlewares
 {
