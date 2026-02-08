@@ -1,4 +1,5 @@
 ﻿using ConsumerExample.Domain.Enums;
+using ConsumerExample.Domain.Events;
 
 namespace ConsumerExample.Domain.Entities
 {
@@ -26,6 +27,11 @@ namespace ConsumerExample.Domain.Entities
         public string MotivoBloqueio { get; protected set; }
         public string CodigoOperacao { get; protected set; }
         public int AnoOperacao { get; protected set; }
+
+        public void RegistrarBloqueioRealizado()
+        {
+            this.AddDomainEvent(new BloqueioRealizadoEvent(this));
+        }
 
         public bool ValidarBloqueio()
         {

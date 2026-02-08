@@ -1,22 +1,26 @@
-﻿using ConsumerExample.Application.Services;
+﻿using ConsumerExample.Application.Dispatchers;
+using ConsumerExample.Application.Services;
 using ConsumerExample.Domain.Entities;
+using ConsumerExample.Domain.Events;
 using ConsumerExample.Domain.Exceptions;
 using ConsumerExample.Domain.Models;
 using ConsumerExample.Domain.Repositories;
-using Microsoft.Extensions.Logging;
 
 namespace ConsumerExample.Worker.UseCases
 {
     public class ProcessarBloqueioUseCase : IUseCase<SolicitacaoBloqueioRequest>
     {
         private readonly IBloqueioRepository _bloqueioRepository;
+        private readonly IDomainEventDispatcher _domainEventDispatcher;
         private readonly ILoggerService<ProcessarBloqueioUseCase> _logger;
         public ProcessarBloqueioUseCase(
             IBloqueioRepository bloqueioRepository,
+            IDomainEventDispatcher domainEventDispatcher,
             ILoggerService<ProcessarBloqueioUseCase> logger
             )
         {
             _bloqueioRepository = bloqueioRepository;
+            _domainEventDispatcher = domainEventDispatcher;
             _logger = logger;
         }
 
@@ -57,6 +61,10 @@ namespace ConsumerExample.Worker.UseCases
 
                     _logger.LogInformation("Salvando novo bloqueio na base");
                     await _bloqueioRepository.SalvarBloqueio(novoBloqueio);
+
+                    novoBloqueio.RegistrarBloqueioRealizado();
+
+                    await _domainEventDispatcher.SendAsync<BloqueioRealizadoEvent>(novoBloqueio.DomainEvents, cancellationToken);
 
                 }
                 catch (BloqueioDuplicadoException ex)
