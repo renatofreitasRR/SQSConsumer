@@ -12,6 +12,8 @@ namespace ConsumerExample.Infrastructure.Repositories
 
         public async Task<BloqueioEntity> BuscarBloqueioAsync(string codigoProcotolo, int ordemBloqueio, DateTime dataMovimento)
         {
+            return null;
+
             return new BloqueioEntity(dataMovimento, codigoProcotolo, ordemBloqueio, 100, "", "", 2025);
         }
 

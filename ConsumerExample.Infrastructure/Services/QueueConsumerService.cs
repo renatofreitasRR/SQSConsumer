@@ -11,20 +11,20 @@ using System.Text.Json;
 
 namespace ConsumerExample.Infrastructure.Services
 {
-    public class QueueConsumerService<TUseCase, IRequest> : IQueueConsumerService<TUseCase, IRequest>
-        where TUseCase : IUseCase<IRequest>
-        where IRequest : Request
+    public class QueueConsumerService<TUseCase, TRequest> : IQueueConsumerService<TUseCase, TRequest>
+        where TUseCase : IUseCase<TRequest>
+        where TRequest : Request
     {
         private readonly IAmazonSQS _sqsClient;
         private readonly IServiceScopeFactory _scopeFactory;
-        private readonly ILogger<QueueConsumerService<TUseCase, IRequest>> _logger;
+        private readonly ILoggerService<QueueConsumerService<TUseCase, TRequest>> _logger;
         private readonly QueueConfigurationModel _queueConfiguration;
         private readonly IFeatureToggleProvider _featureToggleProvider;
 
         public QueueConsumerService(
             IAmazonSQS sqsClient,
             IServiceScopeFactory scopeFactory,
-            ILogger<QueueConsumerService<TUseCase, IRequest>> logger,
+            ILoggerService<QueueConsumerService<TUseCase, TRequest>> logger,
             IFeatureToggleProvider featureToggleProvider,
             QueueConfigurationModel queueConfiguration
             )
@@ -38,82 +38,93 @@ namespace ConsumerExample.Infrastructure.Services
 
         public async Task StartConsumingAsync(CancellationToken cancellationToken = default)
         {
-            _logger.BeginScope(new Dictionary<string, object>
+
+            using (_logger.Enrich(new Dictionary<string, string>
             {
-                ["UseCase"] = typeof(TUseCase).Name,
-                ["RequestType"] = typeof(IRequest).Name
-            });
-
-            _logger.LogInformation("Starting to consume messages");
-
-            while (!cancellationToken.IsCancellationRequested)
+                { "Journey", _queueConfiguration.Journey },
+                { "UseCase", typeof(TUseCase).Name },
+                { "RequestType", typeof(TRequest).Name },
+            }))
             {
-                var consumerIsEnabled = await _featureToggleProvider.IsEnabledAsync(_queueConfiguration.Journey, cancellationToken);
+                _logger.LogInformation("Iniciando consumo das mensagens");
 
-                if (!consumerIsEnabled)
+
+                while (!cancellationToken.IsCancellationRequested)
                 {
-                    _logger.LogInformation("Consumption is disabled for journey {Journey}. Waiting before next check.", _queueConfiguration.Journey);
-                    await Task.Delay(TimeSpan.FromSeconds(60), cancellationToken);
-                    continue;
-                }
+                    var consumerIsEnabled = await _featureToggleProvider.IsEnabledAsync(_queueConfiguration.Journey, cancellationToken);
 
-                var response = await _sqsClient.ReceiveMessageAsync(new ReceiveMessageRequest
-                {
-                    QueueUrl = _queueConfiguration.QueueUrl,
-                    MaxNumberOfMessages = _queueConfiguration.MaxNumberOfMessages,
-                    WaitTimeSeconds = _queueConfiguration.WaitTimeSeconds,
-                }, cancellationToken);
-
-                if (response.Messages is null || response.Messages.Count == 0)
-                    continue;
-
-                _logger.LogInformation("Received {MessageCount} messages", response.Messages.Count);
-
-                foreach (var msg in response.Messages)
-                {
-                    _logger.LogDebug("Message Body: {MessageBody}", msg.Body);
-                    var messageObj = JsonSerializer.Deserialize<IRequest>(msg.Body, new JsonSerializerOptions
+                    if (!consumerIsEnabled)
                     {
-                        PropertyNameCaseInsensitive = true
-                    });
-
-                    _logger.LogDebug("Deserialized Message Object: {@MessageObject}", messageObj);
-
-                    if (messageObj == null)
-                        continue;
-
-                    using var scope = _scopeFactory.CreateScope();
-
-                    var processor = scope
-                        .ServiceProvider
-                        .GetRequiredService<TUseCase>();
-
-                    try
-                    {
-                        _logger.LogInformation("Processing message with ID {MessageId}", msg.MessageId);
-
-                        await processor.ExecuteAsync(messageObj, cancellationToken);
-                        await this.DeleteMessageAsync(msg.ReceiptHandle, cancellationToken);
-
-                        _logger.LogInformation("Successfully processed message with ID {MessageId}", msg.MessageId);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Error processing message with ID {MessageId}", msg.MessageId);
-
+                        _logger.LogInformation("Consumer está desabilitado para a jornada {Journey}. Aguardando próxima checagem", _queueConfiguration.Journey);
+                        await Task.Delay(TimeSpan.FromSeconds(60), cancellationToken);
                         continue;
                     }
+
+                    var response = await _sqsClient.ReceiveMessageAsync(new ReceiveMessageRequest
+                    {
+                        QueueUrl = _queueConfiguration.QueueUrl,
+                        MaxNumberOfMessages = _queueConfiguration.MaxNumberOfMessages,
+                        WaitTimeSeconds = _queueConfiguration.WaitTimeSeconds,
+                    }, cancellationToken);
+
+                    if (response.Messages is null || response.Messages.Count == 0)
+                        continue;
+
+                    _logger.LogInformation("{MessageCount} mensagens recebidas", response.Messages.Count);
+
+                    foreach (var msg in response.Messages)
+                    {
+                        var correlationId = msg.Attributes != null && msg.Attributes.ContainsKey("CorrelationId") ? msg.Attributes["CorrelationId"] : Guid.NewGuid().ToString();
+
+                        using (_logger.Enrich("correlationId", correlationId))
+                        {
+                            _logger.LogInformation("Message Body: {MessageBody}", msg.Body.ToString());
+                            try
+                            {
+                                var messageObj = JsonSerializer.Deserialize<TRequest>(msg.Body, new JsonSerializerOptions
+                                {
+                                    PropertyNameCaseInsensitive = true
+                                });
+
+                                _logger.LogInformation("Deserialized Message Object: {@MessageObject}", messageObj);
+
+                                if (messageObj == null)
+                                    continue;
+
+                                using var scope = _scopeFactory.CreateScope();
+
+                                var processor = scope
+                                    .ServiceProvider
+                                    .GetRequiredService<IUseCase<TRequest>>();
+
+                                _logger.LogInformation("Processando mensagem da fila com Id {MessageId}", msg.MessageId);
+
+                                await processor.ExecuteAsync(messageObj, cancellationToken);
+                                await this.DeleteMessageAsync(msg.ReceiptHandle, cancellationToken);
+
+                                _logger.LogInformation("Mensagem {MessageId} processada com sucesso", msg.MessageId);
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogError(ex, "Erro ao processar mensagem {MessageId}", msg.MessageId);
+
+                                continue;
+                            }
+                        }
+                    }
                 }
+
             }
+
         }
 
         private async Task DeleteMessageAsync(string receiptHandle, CancellationToken cancellationToken)
         {
-            _logger.LogInformation("Deleting message with ReceiptHandle {ReceiptHandle}", receiptHandle);
+            _logger.LogInformation("Deletando mensagem");
 
             await _sqsClient.DeleteMessageAsync(new DeleteMessageRequest
             {
-                QueueUrl = "https://sqs.us-east-1.amazonaws.com/123456789012/MyQueue",
+                QueueUrl = _queueConfiguration.QueueUrl,
                 ReceiptHandle = receiptHandle
             }, cancellationToken);
         }

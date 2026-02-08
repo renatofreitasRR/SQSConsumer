@@ -1,6 +1,6 @@
 ﻿namespace ConsumerExample.Domain.Models
 {
-    public class SolicitaoBloqueioRequest : Request
+    public class SolicitacaoBloqueioRequest : Request
     {
         public DateTime DataMovimento { get; set; }
         public string CodigoProtocolo { get; set; }

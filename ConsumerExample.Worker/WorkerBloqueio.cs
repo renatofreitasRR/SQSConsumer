@@ -7,9 +7,9 @@ namespace ConsumerExample.Worker
     public class WorkerBloqueio : BackgroundService
     {
         private readonly ILogger<WorkerBloqueio> _logger;
-        private readonly IQueueConsumerService<ProcessarBloqueioUseCase, SolicitaoBloqueioRequest> _queueConsumer;
+        private readonly IQueueConsumerService<ProcessarBloqueioUseCase, SolicitacaoBloqueioRequest> _queueConsumer;
 
-        public WorkerBloqueio(ILogger<WorkerBloqueio> logger, IQueueConsumerService<ProcessarBloqueioUseCase, SolicitaoBloqueioRequest> queueConsumer)
+        public WorkerBloqueio(ILogger<WorkerBloqueio> logger, IQueueConsumerService<ProcessarBloqueioUseCase, SolicitacaoBloqueioRequest> queueConsumer)
         {
             _logger = logger;
             _queueConsumer = queueConsumer;
@@ -17,7 +17,7 @@ namespace ConsumerExample.Worker
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("WorkerBloqueio starting at: {time}", DateTimeOffset.Now);
+            _logger.LogInformation("WorkerBloqueio iniciado em: {time}", DateTimeOffset.Now);
 
             try
             {
@@ -25,11 +25,12 @@ namespace ConsumerExample.Worker
             }
             catch (Exception ex)
             {
+                _logger.LogCritical(ex, "Um erro crítico ocorreu no WorkerBloqueio: {message}", ex.Message);
+
                 await StopAsync(stoppingToken);
 
                 Dispose();
 
-                _logger.LogError(ex, "An error occurred in WorkerBloqueio: {message}", ex.Message);
             }
         }
     }

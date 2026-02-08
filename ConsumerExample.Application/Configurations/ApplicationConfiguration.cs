@@ -1,4 +1,5 @@
-﻿using ConsumerExample.Domain.Models;
+﻿using ConsumerExample.Application.Services;
+using ConsumerExample.Domain.Models;
 using ConsumerExample.Worker.UseCases;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,7 +10,7 @@ namespace ConsumerExample.Application.Configurations
     {
         public static IServiceCollection AddApplicationInjection(this IServiceCollection services, IConfiguration configuration)
         {
-            services.AddScoped<IUseCase<SolicitaoBloqueioRequest>, ProcessarBloqueioUseCase>();
+            services.AddScoped<IUseCase<SolicitacaoBloqueioRequest>, ProcessarBloqueioUseCase>();
 
             return services;
         } 

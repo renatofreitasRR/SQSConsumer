@@ -8,7 +8,7 @@ using ConsumerExample.Worker.Services;
 using ConsumerExample.Worker.UseCases;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+using Serilog;
 
 namespace ConsumerExample.Infrastructure.Configurations
 {
@@ -17,11 +17,18 @@ namespace ConsumerExample.Infrastructure.Configurations
         public static IServiceCollection AddInfrastructureInjection(this IServiceCollection services, IConfiguration configuration)
         {
             services
+                .ConfigureLogger()
                 .ConfigureAWSSQS()
                 .ConfigureFeatureToggles()
                 .ConfigureRepositories()
                 .ConfigureQueueConsumer(configuration);
 
+            return services;
+        }
+
+        public static IServiceCollection ConfigureLogger(this IServiceCollection services)
+        {
+            services.AddSingleton(typeof(ILoggerService<>), typeof(LoggerService<>));
             return services;
         }
 
@@ -46,7 +53,7 @@ namespace ConsumerExample.Infrastructure.Configurations
         public static IServiceCollection ConfigureQueueConsumer(this IServiceCollection services, IConfiguration configuration)
         {
             services
-               .AddSingleton<IQueueConsumerService<ProcessarBloqueioUseCase, SolicitaoBloqueioRequest>>(serviceProvider =>
+               .AddSingleton<IQueueConsumerService<ProcessarBloqueioUseCase, SolicitacaoBloqueioRequest>>(serviceProvider =>
                {
 
                    var sqsClient = serviceProvider
@@ -59,19 +66,19 @@ namespace ConsumerExample.Infrastructure.Configurations
                    .GetRequiredService<IFeatureToggleProvider>();
 
                    var logger = serviceProvider
-                   .GetRequiredService<ILogger<QueueConsumerService<ProcessarBloqueioUseCase, SolicitaoBloqueioRequest>>>();
+                   .GetRequiredService<ILoggerService<QueueConsumerService<ProcessarBloqueioUseCase, SolicitacaoBloqueioRequest>>>();
 
-                   var queueConfig = configuration.GetSection("QueuConfiguration").GetSection("QueueBloqueio");
+                   var queueConfig = configuration.GetSection("QueueConfiguration").GetSection("QueueBloqueio");
 
                    var queueConfiguration = new QueueConfigurationModel
                    {
-                       Journey = queueConfig.GetSection(nameof(QueueConfigurationModel.Journey)).Value,
-                       MaxNumberOfMessages = int.Parse(queueConfig.GetSection(nameof(QueueConfigurationModel.MaxNumberOfMessages)).Value ?? "10"),
-                       QueueUrl = queueConfig.GetSection(nameof(QueueConfigurationModel.QueueUrl)).Value,
-                       WaitTimeSeconds = int.Parse(queueConfig.GetSection(nameof(QueueConfigurationModel.WaitTimeSeconds)).Value ?? "20")
+                       Journey = queueConfig["Journey"] ?? "",
+                       MaxNumberOfMessages = int.Parse(queueConfig["MaxNumberOfMessages"] ?? "10"),
+                       QueueUrl = queueConfig["QueueUrl"] ?? "",
+                       WaitTimeSeconds = int.Parse(queueConfig["WaitTimeSeconds"] ?? "20")
                    };
 
-                   return new QueueConsumerService<ProcessarBloqueioUseCase, SolicitaoBloqueioRequest>(sqsClient, scopeFactory, logger, featureToggleProvider, queueConfiguration);
+                   return new QueueConsumerService<ProcessarBloqueioUseCase, SolicitacaoBloqueioRequest>(sqsClient, scopeFactory, logger, featureToggleProvider, queueConfiguration);
                });
 
             return services;
